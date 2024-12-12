@@ -3,6 +3,7 @@ public class Main {
     final static int floors = 10;
     final static int liftsCount = 5;
     static Lift [] lifts = new Lift[liftsCount];
+    final static Lift dummy = new Lift("dummy", Integer.MAX_VALUE);
     public static void main(String [] args){
         Scanner s = new Scanner(System.in);
         // System.out.println("Current Floor : ");
@@ -26,6 +27,7 @@ public class Main {
         restrictLifts(1, 0, 5);
         restrictLifts(2, 6, 10);
         restrictLifts(3, 6, 10);
+        liftUnderMaintenance(lifts[3]);
         assignNearestLiftOfSameDirection(1, 6);
     }
 
@@ -46,10 +48,13 @@ public class Main {
 
     public static void assignLift(int currentFloor, int destinationFloor){
         Lift result = null;
+        int minStops = Integer.MAX_VALUE;
         for(Lift lift : lifts){
-            if(!lift.restrictedFloors[currentFloor] && !lift.restrictedFloors[destinationFloor]){
+            int stops = findNoOfStops(lift, currentFloor, destinationFloor);
+            if(lift.currFloor != -1 && !lift.restrictedFloors[currentFloor] && !lift.restrictedFloors[destinationFloor] && minStops > stops){
                 result = lift;
-                if(result != null)  break;
+                minStops = stops;
+                // if(result != null)  break;
             }
         }
         System.out.println(result.name + " is assigned");
@@ -58,40 +63,50 @@ public class Main {
     }
 
     public static void assignNearestLift(int currentFloor, int destinationFloor){
-        Lift nearestLift = new Lift("lift", Integer.MAX_VALUE);
+        Lift nearestLift = dummy;
         int minDiff = Math.abs(nearestLift.currFloor - currentFloor);
+        int minStops = Integer.MAX_VALUE;
         for(Lift lift : lifts){
-            if(!lift.restrictedFloors[currentFloor] && !lift.restrictedFloors[destinationFloor]){
+            if(lift.currFloor != -1 && !lift.restrictedFloors[currentFloor] && !lift.restrictedFloors[destinationFloor]){
                 int diff = Math.abs(lift.currFloor - currentFloor);
-                if(minDiff > diff){
+                int stops = findNoOfStops(lift, currentFloor, destinationFloor);
+                if(minDiff > diff || (minDiff == diff && minStops > stops)){
                     minDiff = diff;
                     nearestLift = lift;
+                    minStops = stops;
                 }
             }
         }
-        if(nearestLift.name.equals("lift")) System.out.println("Error! Cannot assign a lift");
+        if(nearestLift == dummy) System.out.println("Error! Cannot assign a lift");
         else    System.out.println(nearestLift.name + " is assigned");
         nearestLift.currFloor = destinationFloor;
         displayLifts();
     }
 
     public static void assignNearestLiftOfSameDirection(int currentFloor, int destinationFloor){
-        Lift nearestLift = new Lift("lift", Integer.MAX_VALUE);
+        Lift nearestLift = dummy;
         int minDiff = Math.abs(nearestLift.currFloor - currentFloor);
+        int minStops = Integer.MAX_VALUE;
         boolean preferredDirection = (currentFloor - destinationFloor) < 0; // true for down && false for up
         for(Lift lift : lifts){
-            if(!lift.restrictedFloors[currentFloor] && !lift.restrictedFloors[destinationFloor]){
+            if(lift.currFloor != -1 && !lift.restrictedFloors[currentFloor] && !lift.restrictedFloors[destinationFloor]){
                 int diff = Math.abs(lift.currFloor - currentFloor);
+                int stops = findNoOfStops(lift, currentFloor, destinationFloor);
                 if(minDiff > diff){  
                     nearestLift = lift;
                     minDiff = diff;
                 } else if(minDiff == diff){
-                    if(preferredDirection && lift.currFloor < nearestLift.currFloor) nearestLift = lift;
-                    else if(!preferredDirection && lift.currFloor > nearestLift.currFloor)    nearestLift = lift;
+                    if(preferredDirection && lift.currFloor < nearestLift.currFloor && minStops > stops){
+                         nearestLift = lift;
+                         minStops = stops;
+                    } else if(!preferredDirection && lift.currFloor > nearestLift.currFloor && minStops > stops){
+                        nearestLift = lift;
+                        minStops = stops;
+                    }
                 }
             }
         }
-        if(nearestLift.name.equals("lift")) System.out.println("Error! Cannot assign a lift");
+        if(nearestLift == dummy) System.out.println("Error! Cannot assign a lift");
         else    System.out.println(nearestLift.name + " is assigned");
         nearestLift.currFloor = destinationFloor;
         displayLifts();
@@ -105,6 +120,7 @@ public class Main {
     }
 
     public static int findNoOfStops(Lift lift, int currentFloor, int destinationFloor){
+        if(lift == dummy)   return Integer.MAX_VALUE;
         int stops = 0;
         for(int i = lift.currFloor + 1; i < currentFloor; i++){
             if(!lift.restrictedFloors[i])   stops++;
@@ -113,6 +129,10 @@ public class Main {
             if(!lift.restrictedFloors[i])   stops++;
         }
         return stops;
+    }
+
+    public static void liftUnderMaintenance(Lift lift){
+        lift.currFloor = -1;
     }
 }
 
